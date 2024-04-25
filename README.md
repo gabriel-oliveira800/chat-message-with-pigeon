@@ -1,16 +1,25 @@
-# messages
+# Chat Message App - Pigeon
 
-A new Flutter project.
+Este é um projeto de exemplo de um aplicativo de chat de mensagens simples desenvolvido com Flutter, uma estrutura de desenvolvimento de aplicativos móveis multiplataforma, e a biblioteca Pigeon, que simplifica a conversão de tipos de dados entre plataformas.
 
-## Getting Started
+## Visão Geral
 
-This project is a starting point for a Flutter application.
+Este aplicativo permite que os usuários enviem e recebam mensagens de texto. Ele demonstra como criar uma interface de usuário básica para um aplicativo de chat e como usar a biblioteca Pigeon para facilitar a comunicação entre as camadas nativas e Flutter do aplicativo.
 
-A few resources to get you started if this is your first Flutter project:
+## Recursos
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Envio e recebimento de mensagens.
+- Interface de usuário simples e intuitiva.
+- Conversão eficiente de tipos de dados entre Flutter e código nativo.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Requisitos de Instalação
+
+Antes de começar, certifique-se de ter o Flutter instalado e configurado em seu ambiente de desenvolvimento. Você também precisará de um ambiente de desenvolvimento para iOS ou Android, dependendo da plataforma de destino do seu aplicativo.
+
+1. Clone este repositório para o seu ambiente de desenvolvimento local.
+2. Abra o projeto no seu editor de código preferido.
+3. Execute o aplicativo em um emulador ou dispositivo físico usando o comando:
+
+   ```
+    flutter run
+   ```
