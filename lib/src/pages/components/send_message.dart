@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 class SendMessage extends StatelessWidget {
   final FocusNode focusNode;
   final VoidCallback onSend;
-  final VoidCallback onTap;
   final TextEditingController textController;
 
   const SendMessage({
     super.key,
-    required this.onTap,
     required this.onSend,
     required this.focusNode,
     required this.textController,
@@ -37,7 +35,6 @@ class SendMessage extends StatelessWidget {
             children: <Widget>[
               Flexible(
                 child: TextField(
-                  onTap: onTap,
                   focusNode: focusNode,
                   controller: textController,
                   decoration: const InputDecoration.collapsed(

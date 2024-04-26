@@ -23,3 +23,11 @@ Antes de começar, certifique-se de ter o Flutter instalado e configurado em seu
    ```
     flutter run
    ```
+
+## Pigeon
+
+Para gerar os tipos usando pigeon, execute o comando:
+
+```
+ dart run pigeon --input pigeons/messages.dart
+```

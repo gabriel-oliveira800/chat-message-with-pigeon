@@ -1,27 +1,37 @@
-import 'package:flutter/services.dart';
-
+import '../../api/messages.g.dart';
 import '../dtos/message.dart';
 
+import 'utils.dart';
+
+class NativeMessageApi implements FlutterMessagingApi {
+  final MessagingApi _nativeAPI = MessagingApi();
+
+  NativeMessageApi() {
+    FlutterMessagingApi.setUp(this);
+  }
+
+  @override
+  Future<List<MessageDto?>> getMessages() async {
+    return await _nativeAPI.getMessages();
+  }
+
+  @override
+  Future<MessageDto> sendMessage(MessageDto message) async {
+    return await _nativeAPI.sendMessage(message);
+  }
+}
+
 abstract class MessageService {
-  static const _channel = MethodChannel('cubos.dev.message/service');
+  static final _api = NativeMessageApi();
 
   static Future<Messages> getMessages() async {
-    final messages = await _channel.invokeMethod<List>('getMessages');
-    if (messages == null) return [];
-
-    return messages.map((it) {
-      final isOwner = (it as String).contains('[OWNER]: ');
-      final message = it.replaceAll(RegExp(r'\[OWNER\]: '), '');
-
-      if (isOwner) return Message.owner(message);
-      return Message.generateId(message, 'John Doe');
-    }).toList();
+    final messages = await _api.getMessages();
+    return messages.map((it) => Utils.convertToMessage(it!)).toList();
   }
 
   static Future<Message?> sendMessage(Message message) async {
-    final result = await _channel.invokeMethod<Map>('sendMessage');
-    if (result == null) return null;
+    final response = await _api.sendMessage(Utils.convertToMessageDto(message));
 
-    return Message.generateId(result['message'], result['name']);
+    return Utils.convertToMessage(response);
   }
 }
