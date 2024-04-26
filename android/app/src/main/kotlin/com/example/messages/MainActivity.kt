@@ -7,49 +7,36 @@ import io.bloco.faker.Faker
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodCall
+import MessageDto
+import MessagingApi
+import android.util.Log
 
-
-class MainActivity: FlutterActivity(), MethodCallHandler {
+class MainActivity: FlutterActivity(), MessagingApi {
     private val faker = Faker("pt-BR")
-    private lateinit var channel: MethodChannel
-
-    private val CHANNEL = "cubos.dev.message/service"
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-
-        channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
-        this.channel.setMethodCallHandler(this)
+        MessagingApi.setUp(flutterEngine.dartExecutor.binaryMessenger, this)
     }
 
-    override fun onMethodCall(call: MethodCall, result: Result) {
-        when (call.method) {
-            "getMessages" -> getMessages(result)
-            "sendMessage" ->  sendMessage(result)
-            else -> result.notImplemented()
-        }
+    private fun createMessage(message: String, isOwner: Boolean = false) : MessageDto {
+        val date = faker.date.forward().toString()
+        val name =  if(isOwner) "Você" else faker.name.firstName();
+        val id = if(isOwner) "01" else faker.number.between(2, 10).toString()
+
+        return MessageDto(id,name,message,date)
     }
 
-    private fun getMessages(result: Result) {
-        val messages = listOf(
-            "Olá, como vai?",
-            "[OWNER]: Eu estou bem, obrigado!",
-            "O que você está fazendo?",
+    override fun getMessages(): List<MessageDto> {
+        return listOf(
+            createMessage("Olá, como vai?"),
+            createMessage("Eu estou bem, obrigado!", isOwner = true),
+            createMessage("O que você está fazendo?"),
         )
-
-        result.success(messages)
     }
 
-    private fun sendMessage(result: Result) {
-        var message = HashMap<String, String>()
-
-        message["name"] = faker.name.firstName()
-        message["message"] = faker.lorem.sentence()
-
-        result.success(message)
+    override fun sendMessage(message: MessageDto): MessageDto {
+        Log.i("MessageDto", "Send message: ${message.toString()}")
+        return createMessage(faker.lorem.sentence())
     }
 }
