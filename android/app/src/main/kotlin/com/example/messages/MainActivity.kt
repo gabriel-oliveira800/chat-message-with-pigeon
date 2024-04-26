@@ -6,17 +6,24 @@ import io.bloco.faker.Faker
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.Log
 
-import MessageDto
+import FlutterMessagingApi
 import MessagingApi
-import android.util.Log
+import MessageDto
 
 class MainActivity: FlutterActivity(), MessagingApi {
     private val faker = Faker("pt-BR")
 
+    private lateinit var flutterApi: FlutterMessagingApi;
+
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MessagingApi.setUp(flutterEngine.dartExecutor.binaryMessenger, this)
+
+        val binaryMessenger = flutterEngine.dartExecutor.binaryMessenger
+
+        MessagingApi.setUp(binaryMessenger, this)
+        this.flutterApi = FlutterMessagingApi(binaryMessenger)
     }
 
     private fun createMessage(message: String, isOwner: Boolean = false) : MessageDto {

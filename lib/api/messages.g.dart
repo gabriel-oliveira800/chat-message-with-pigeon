@@ -15,6 +15,16 @@ PlatformException _createConnectionError(String channelName) {
   );
 }
 
+List<Object?> wrapResponse({Object? result, PlatformException? error, bool empty = false}) {
+  if (empty) {
+    return <Object?>[];
+  }
+  if (error == null) {
+    return <Object?>[result];
+  }
+  return <Object?>[error.code, error.message, error.details];
+}
+
 class MessageDto {
   MessageDto({
     required this.id,
@@ -144,6 +154,90 @@ class MessagingApi {
       );
     } else {
       return (__pigeon_replyList[0] as MessageDto?)!;
+    }
+  }
+}
+
+class _FlutterMessagingApiCodec extends StandardMessageCodec {
+  const _FlutterMessagingApiCodec();
+  @override
+  void writeValue(WriteBuffer buffer, Object? value) {
+    if (value is MessageDto) {
+      buffer.putUint8(128);
+      writeValue(buffer, value.encode());
+    } else if (value is MessageDto) {
+      buffer.putUint8(129);
+      writeValue(buffer, value.encode());
+    } else {
+      super.writeValue(buffer, value);
+    }
+  }
+
+  @override
+  Object? readValueOfType(int type, ReadBuffer buffer) {
+    switch (type) {
+      case 128: 
+        return MessageDto.decode(readValue(buffer)!);
+      case 129: 
+        return MessageDto.decode(readValue(buffer)!);
+      default:
+        return super.readValueOfType(type, buffer);
+    }
+  }
+}
+
+abstract class FlutterMessagingApi {
+  static const MessageCodec<Object?> pigeonChannelCodec = _FlutterMessagingApiCodec();
+
+  Future<List<MessageDto?>> getMessages();
+
+  Future<MessageDto> sendMessage(MessageDto message);
+
+  static void setUp(FlutterMessagingApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+    {
+      final BasicMessageChannel<Object?> __pigeon_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.messages.FlutterMessagingApi.getMessages$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        __pigeon_channel.setMessageHandler(null);
+      } else {
+        __pigeon_channel.setMessageHandler((Object? message) async {
+          try {
+            final List<MessageDto?> output = await api.getMessages();
+            return wrapResponse(result: output);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> __pigeon_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.messages.FlutterMessagingApi.sendMessage$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        __pigeon_channel.setMessageHandler(null);
+      } else {
+        __pigeon_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.messages.FlutterMessagingApi.sendMessage was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final MessageDto? arg_message = (args[0] as MessageDto?);
+          assert(arg_message != null,
+              'Argument for dev.flutter.pigeon.messages.FlutterMessagingApi.sendMessage was null, expected non-null MessageDto.');
+          try {
+            final MessageDto output = await api.sendMessage(arg_message!);
+            return wrapResponse(result: output);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
     }
   }
 }

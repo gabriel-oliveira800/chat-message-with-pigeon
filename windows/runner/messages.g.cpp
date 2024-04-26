@@ -212,3 +212,101 @@ EncodableValue MessagingApi::WrapError(const FlutterError& error) {
   });
 }
 
+
+FlutterMessagingApiCodecSerializer::FlutterMessagingApiCodecSerializer() {}
+
+EncodableValue FlutterMessagingApiCodecSerializer::ReadValueOfType(
+  uint8_t type,
+  flutter::ByteStreamReader* stream) const {
+  switch (type) {
+    case 128:
+      return CustomEncodableValue(MessageDto::FromEncodableList(std::get<EncodableList>(ReadValue(stream))));
+    case 129:
+      return CustomEncodableValue(MessageDto::FromEncodableList(std::get<EncodableList>(ReadValue(stream))));
+    default:
+      return flutter::StandardCodecSerializer::ReadValueOfType(type, stream);
+  }
+}
+
+void FlutterMessagingApiCodecSerializer::WriteValue(
+  const EncodableValue& value,
+  flutter::ByteStreamWriter* stream) const {
+  if (const CustomEncodableValue* custom_value = std::get_if<CustomEncodableValue>(&value)) {
+    if (custom_value->type() == typeid(MessageDto)) {
+      stream->WriteByte(128);
+      WriteValue(EncodableValue(std::any_cast<MessageDto>(*custom_value).ToEncodableList()), stream);
+      return;
+    }
+    if (custom_value->type() == typeid(MessageDto)) {
+      stream->WriteByte(129);
+      WriteValue(EncodableValue(std::any_cast<MessageDto>(*custom_value).ToEncodableList()), stream);
+      return;
+    }
+  }
+  flutter::StandardCodecSerializer::WriteValue(value, stream);
+}
+
+// Generated class from Pigeon that represents Flutter messages that can be called from C++.
+FlutterMessagingApi::FlutterMessagingApi(flutter::BinaryMessenger* binary_messenger)
+ : binary_messenger_(binary_messenger),
+    message_channel_suffix_("") {}
+
+FlutterMessagingApi::FlutterMessagingApi(
+  flutter::BinaryMessenger* binary_messenger,
+  const std::string& message_channel_suffix)
+ : binary_messenger_(binary_messenger),
+    message_channel_suffix_(message_channel_suffix.length() > 0 ? std::string(".") + message_channel_suffix : "") {}
+
+const flutter::StandardMessageCodec& FlutterMessagingApi::GetCodec() {
+  return flutter::StandardMessageCodec::GetInstance(&FlutterMessagingApiCodecSerializer::GetInstance());
+}
+
+void FlutterMessagingApi::GetMessages(
+  std::function<void(const EncodableList&)>&& on_success,
+  std::function<void(const FlutterError&)>&& on_error) {
+  const std::string channel_name = "dev.flutter.pigeon.messages.FlutterMessagingApi.getMessages" + message_channel_suffix_;
+  BasicMessageChannel<> channel(binary_messenger_, channel_name, &GetCodec());
+  EncodableValue encoded_api_arguments = EncodableValue();
+  channel.Send(encoded_api_arguments, [channel_name, on_success = std::move(on_success), on_error = std::move(on_error)](const uint8_t* reply, size_t reply_size) {
+    std::unique_ptr<EncodableValue> response = GetCodec().DecodeMessage(reply, reply_size);
+    const auto& encodable_return_value = *response;
+    const auto* list_return_value = std::get_if<EncodableList>(&encodable_return_value);
+    if (list_return_value) {
+      if (list_return_value->size() > 1) {
+        on_error(FlutterError(std::get<std::string>(list_return_value->at(0)), std::get<std::string>(list_return_value->at(1)), list_return_value->at(2)));
+      } else {
+        const auto& return_value = std::get<EncodableList>(list_return_value->at(0));
+        on_success(return_value);
+      }
+    } else {
+      on_error(CreateConnectionError(channel_name));
+    } 
+  });
+}
+
+void FlutterMessagingApi::SendMessage(
+  const MessageDto& message_arg,
+  std::function<void(const MessageDto&)>&& on_success,
+  std::function<void(const FlutterError&)>&& on_error) {
+  const std::string channel_name = "dev.flutter.pigeon.messages.FlutterMessagingApi.sendMessage" + message_channel_suffix_;
+  BasicMessageChannel<> channel(binary_messenger_, channel_name, &GetCodec());
+  EncodableValue encoded_api_arguments = EncodableValue(EncodableList{
+    CustomEncodableValue(message_arg),
+  });
+  channel.Send(encoded_api_arguments, [channel_name, on_success = std::move(on_success), on_error = std::move(on_error)](const uint8_t* reply, size_t reply_size) {
+    std::unique_ptr<EncodableValue> response = GetCodec().DecodeMessage(reply, reply_size);
+    const auto& encodable_return_value = *response;
+    const auto* list_return_value = std::get_if<EncodableList>(&encodable_return_value);
+    if (list_return_value) {
+      if (list_return_value->size() > 1) {
+        on_error(FlutterError(std::get<std::string>(list_return_value->at(0)), std::get<std::string>(list_return_value->at(1)), list_return_value->at(2)));
+      } else {
+        const auto& return_value = std::any_cast<const MessageDto&>(std::get<CustomEncodableValue>(list_return_value->at(0)));
+        on_success(return_value);
+      }
+    } else {
+      on_error(CreateConnectionError(channel_name));
+    } 
+  });
+}
+

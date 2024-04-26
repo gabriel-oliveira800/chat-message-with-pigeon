@@ -6,13 +6,13 @@ import 'message_bubble.dart';
 class MessagesWrapper extends StatelessWidget {
   final bool isLoading;
   final Messages messages;
-  final ScrollController? scrollController;
+  final ScrollController scrollController;
 
   const MessagesWrapper({
     super.key,
-    this.scrollController,
     required this.messages,
     required this.isLoading,
+    required this.scrollController,
   });
 
   @override

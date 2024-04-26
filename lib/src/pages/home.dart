@@ -40,6 +40,10 @@ class _HomeState extends State<Home> {
     _textController = TextEditingController();
 
     Future(_getAllMessages);
+
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) _scrollToBottom();
+    });
   }
 
   Future<void> _getAllMessages() async {
@@ -88,7 +92,6 @@ class _HomeState extends State<Home> {
       bottomSheet: SendMessage(
         onSend: _addMessage,
         focusNode: _focusNode,
-        onTap: _scrollToBottom,
         textController: _textController,
       ),
     );
