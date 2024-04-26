@@ -40,4 +40,14 @@ extern void SetUpMessagingApi(id<FlutterBinaryMessenger> binaryMessenger, NSObje
 
 extern void SetUpMessagingApiWithSuffix(id<FlutterBinaryMessenger> binaryMessenger, NSObject<MessagingApi> *_Nullable api, NSString *messageChannelSuffix);
 
+/// The codec used by FlutterMessagingApi.
+NSObject<FlutterMessageCodec> *FlutterMessagingApiGetCodec(void);
+
+@interface FlutterMessagingApi : NSObject
+- (instancetype)initWithBinaryMessenger:(id<FlutterBinaryMessenger>)binaryMessenger;
+- (instancetype)initWithBinaryMessenger:(id<FlutterBinaryMessenger>)binaryMessenger messageChannelSuffix:(nullable NSString *)messageChannelSuffix;
+- (void)getMessagesWithCompletion:(void (^)(NSArray<MessageDto *> *_Nullable, FlutterError *_Nullable))completion;
+- (void)sendMessageMessage:(MessageDto *)message completion:(void (^)(MessageDto *_Nullable, FlutterError *_Nullable))completion;
+@end
+
 NS_ASSUME_NONNULL_END

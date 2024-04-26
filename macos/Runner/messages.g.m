@@ -22,6 +22,10 @@ static NSArray *wrapResult(id result, FlutterError *error) {
   return @[ result ?: [NSNull null] ];
 }
 
+static FlutterError *createConnectionError(NSString *channelName) {
+  return [FlutterError errorWithCode:@"channel-error" message:[NSString stringWithFormat:@"%@/%@/%@", @"Unable to establish connection on channel: '", channelName, @"'."] details:@""];
+}
+
 static id GetNullableObjectAtIndex(NSArray *array, NSInteger key) {
   id result = array[key];
   return (result == [NSNull null]) ? nil : result;
@@ -161,3 +165,115 @@ void SetUpMessagingApiWithSuffix(id<FlutterBinaryMessenger> binaryMessenger, NSO
     }
   }
 }
+@interface FlutterMessagingApiCodecReader : FlutterStandardReader
+@end
+@implementation FlutterMessagingApiCodecReader
+- (nullable id)readValueOfType:(UInt8)type {
+  switch (type) {
+    case 128: 
+      return [MessageDto fromList:[self readValue]];
+    case 129: 
+      return [MessageDto fromList:[self readValue]];
+    default:
+      return [super readValueOfType:type];
+  }
+}
+@end
+
+@interface FlutterMessagingApiCodecWriter : FlutterStandardWriter
+@end
+@implementation FlutterMessagingApiCodecWriter
+- (void)writeValue:(id)value {
+  if ([value isKindOfClass:[MessageDto class]]) {
+    [self writeByte:128];
+    [self writeValue:[value toList]];
+  } else if ([value isKindOfClass:[MessageDto class]]) {
+    [self writeByte:129];
+    [self writeValue:[value toList]];
+  } else {
+    [super writeValue:value];
+  }
+}
+@end
+
+@interface FlutterMessagingApiCodecReaderWriter : FlutterStandardReaderWriter
+@end
+@implementation FlutterMessagingApiCodecReaderWriter
+- (FlutterStandardWriter *)writerWithData:(NSMutableData *)data {
+  return [[FlutterMessagingApiCodecWriter alloc] initWithData:data];
+}
+- (FlutterStandardReader *)readerWithData:(NSData *)data {
+  return [[FlutterMessagingApiCodecReader alloc] initWithData:data];
+}
+@end
+
+NSObject<FlutterMessageCodec> *FlutterMessagingApiGetCodec(void) {
+  static FlutterStandardMessageCodec *sSharedObject = nil;
+  static dispatch_once_t sPred = 0;
+  dispatch_once(&sPred, ^{
+    FlutterMessagingApiCodecReaderWriter *readerWriter = [[FlutterMessagingApiCodecReaderWriter alloc] init];
+    sSharedObject = [FlutterStandardMessageCodec codecWithReaderWriter:readerWriter];
+  });
+  return sSharedObject;
+}
+
+@interface FlutterMessagingApi ()
+@property(nonatomic, strong) NSObject<FlutterBinaryMessenger> *binaryMessenger;
+@property(nonatomic, strong) NSString *messageChannelSuffix;
+@end
+
+@implementation FlutterMessagingApi
+
+- (instancetype)initWithBinaryMessenger:(NSObject<FlutterBinaryMessenger> *)binaryMessenger {
+  return [self initWithBinaryMessenger:binaryMessenger messageChannelSuffix:@""];
+}
+- (instancetype)initWithBinaryMessenger:(NSObject<FlutterBinaryMessenger> *)binaryMessenger messageChannelSuffix:(nullable NSString*)messageChannelSuffix{
+  self = [self init];
+  if (self) {
+    _binaryMessenger = binaryMessenger;
+    _messageChannelSuffix = [messageChannelSuffix length] == 0 ? @"" : [NSString stringWithFormat: @".%@", messageChannelSuffix];
+  }
+  return self;
+}
+- (void)getMessagesWithCompletion:(void (^)(NSArray<MessageDto *> *_Nullable, FlutterError *_Nullable))completion {
+  NSString *channelName = [NSString stringWithFormat:@"%@%@", @"dev.flutter.pigeon.messages.FlutterMessagingApi.getMessages", _messageChannelSuffix];
+  FlutterBasicMessageChannel *channel =
+    [FlutterBasicMessageChannel
+      messageChannelWithName:channelName
+      binaryMessenger:self.binaryMessenger
+      codec:FlutterMessagingApiGetCodec()];
+  [channel sendMessage:nil reply:^(NSArray<id> *reply) {
+    if (reply != nil) {
+      if (reply.count > 1) {
+        completion(nil, [FlutterError errorWithCode:reply[0] message:reply[1] details:reply[2]]);
+      } else {
+        NSArray<MessageDto *> *output = reply[0] == [NSNull null] ? nil : reply[0];
+        completion(output, nil);
+      }
+    } else {
+      completion(nil, createConnectionError(channelName));
+    } 
+  }];
+}
+- (void)sendMessageMessage:(MessageDto *)arg_message completion:(void (^)(MessageDto *_Nullable, FlutterError *_Nullable))completion {
+  NSString *channelName = [NSString stringWithFormat:@"%@%@", @"dev.flutter.pigeon.messages.FlutterMessagingApi.sendMessage", _messageChannelSuffix];
+  FlutterBasicMessageChannel *channel =
+    [FlutterBasicMessageChannel
+      messageChannelWithName:channelName
+      binaryMessenger:self.binaryMessenger
+      codec:FlutterMessagingApiGetCodec()];
+  [channel sendMessage:@[arg_message ?: [NSNull null]] reply:^(NSArray<id> *reply) {
+    if (reply != nil) {
+      if (reply.count > 1) {
+        completion(nil, [FlutterError errorWithCode:reply[0] message:reply[1] details:reply[2]]);
+      } else {
+        MessageDto *output = reply[0] == [NSNull null] ? nil : reply[0];
+        completion(output, nil);
+      }
+    } else {
+      completion(nil, createConnectionError(channelName));
+    } 
+  }];
+}
+@end
+

@@ -30,6 +30,10 @@ private func wrapError(_ error: Any) -> [Any?] {
   ]
 }
 
+private func createConnectionError(withChannelName channelName: String) -> FlutterError {
+  return FlutterError(code: "channel-error", message: "Unable to establish connection on channel: '\(channelName)'.", details: "")
+}
+
 private func isNullish(_ value: Any?) -> Bool {
   return value is NSNull || value == nil
 }
@@ -151,6 +155,105 @@ class MessagingApiSetup {
       }
     } else {
       sendMessageChannel.setMessageHandler(nil)
+    }
+  }
+}
+private class FlutterMessagingApiCodecReader: FlutterStandardReader {
+  override func readValue(ofType type: UInt8) -> Any? {
+    switch type {
+    case 128:
+      return MessageDto.fromList(self.readValue() as! [Any?])
+    case 129:
+      return MessageDto.fromList(self.readValue() as! [Any?])
+    default:
+      return super.readValue(ofType: type)
+    }
+  }
+}
+
+private class FlutterMessagingApiCodecWriter: FlutterStandardWriter {
+  override func writeValue(_ value: Any) {
+    if let value = value as? MessageDto {
+      super.writeByte(128)
+      super.writeValue(value.toList())
+    } else if let value = value as? MessageDto {
+      super.writeByte(129)
+      super.writeValue(value.toList())
+    } else {
+      super.writeValue(value)
+    }
+  }
+}
+
+private class FlutterMessagingApiCodecReaderWriter: FlutterStandardReaderWriter {
+  override func reader(with data: Data) -> FlutterStandardReader {
+    return FlutterMessagingApiCodecReader(data: data)
+  }
+
+  override func writer(with data: NSMutableData) -> FlutterStandardWriter {
+    return FlutterMessagingApiCodecWriter(data: data)
+  }
+}
+
+class FlutterMessagingApiCodec: FlutterStandardMessageCodec {
+  static let shared = FlutterMessagingApiCodec(readerWriter: FlutterMessagingApiCodecReaderWriter())
+}
+
+/// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
+protocol FlutterMessagingApiProtocol {
+  func getMessages(completion: @escaping (Result<[MessageDto], FlutterError>) -> Void)
+  func sendMessage(message messageArg: MessageDto, completion: @escaping (Result<MessageDto, FlutterError>) -> Void)
+}
+class FlutterMessagingApi: FlutterMessagingApiProtocol {
+  private let binaryMessenger: FlutterBinaryMessenger
+  private let messageChannelSuffix: String
+  init(binaryMessenger: FlutterBinaryMessenger, messageChannelSuffix: String = "") {
+    self.binaryMessenger = binaryMessenger
+    self.messageChannelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+  }
+  var codec: FlutterStandardMessageCodec {
+    return FlutterMessagingApiCodec.shared
+  }
+  func getMessages(completion: @escaping (Result<[MessageDto], FlutterError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.messages.FlutterMessagingApi.getMessages\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage(nil) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(FlutterError(code: code, message: message, details: details)))
+      } else if listResponse[0] == nil {
+        completion(.failure(FlutterError(code: "null-error", message: "Flutter api returned null value for non-null return value.", details: "")))
+      } else {
+        let result = listResponse[0] as! [MessageDto]
+        completion(.success(result))
+      }
+    }
+  }
+  func sendMessage(message messageArg: MessageDto, completion: @escaping (Result<MessageDto, FlutterError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.messages.FlutterMessagingApi.sendMessage\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([messageArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(FlutterError(code: code, message: message, details: details)))
+      } else if listResponse[0] == nil {
+        completion(.failure(FlutterError(code: "null-error", message: "Flutter api returned null value for non-null return value.", details: "")))
+      } else {
+        let result = listResponse[0] as! MessageDto
+        completion(.success(result))
+      }
     }
   }
 }

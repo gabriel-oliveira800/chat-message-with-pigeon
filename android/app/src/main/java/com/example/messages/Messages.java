@@ -60,6 +60,11 @@ public class Messages {
     return errorList;
   }
 
+  @NonNull
+  protected static FlutterError createConnectionError(@NonNull String channelName) {
+    return new FlutterError("channel-error",  "Unable to establish connection on channel: " + channelName + ".", "");
+  }
+
   @Target(METHOD)
   @Retention(CLASS)
   @interface CanIgnoreReturnValue {}
@@ -189,6 +194,31 @@ public class Messages {
     }
   }
 
+  /** Asynchronous error handling return type for non-nullable API method returns. */
+  public interface Result<T> {
+    /** Success case callback method for handling returns. */
+    void success(@NonNull T result);
+
+    /** Failure case callback method for handling errors. */
+    void error(@NonNull Throwable error);
+  }
+  /** Asynchronous error handling return type for nullable API method returns. */
+  public interface NullableResult<T> {
+    /** Success case callback method for handling returns. */
+    void success(@Nullable T result);
+
+    /** Failure case callback method for handling errors. */
+    void error(@NonNull Throwable error);
+  }
+  /** Asynchronous error handling return type for void API method returns. */
+  public interface VoidResult {
+    /** Success case callback method for handling returns. */
+    void success();
+
+    /** Failure case callback method for handling errors. */
+    void error(@NonNull Throwable error);
+  }
+
   private static class MessagingApiCodec extends StandardMessageCodec {
     public static final MessagingApiCodec INSTANCE = new MessagingApiCodec();
 
@@ -289,6 +319,105 @@ public class Messages {
           channel.setMessageHandler(null);
         }
       }
+    }
+  }
+
+  private static class FlutterMessagingApiCodec extends StandardMessageCodec {
+    public static final FlutterMessagingApiCodec INSTANCE = new FlutterMessagingApiCodec();
+
+    private FlutterMessagingApiCodec() {}
+
+    @Override
+    protected Object readValueOfType(byte type, @NonNull ByteBuffer buffer) {
+      switch (type) {
+        case (byte) 128:
+          return MessageDto.fromList((ArrayList<Object>) readValue(buffer));
+        case (byte) 129:
+          return MessageDto.fromList((ArrayList<Object>) readValue(buffer));
+        default:
+          return super.readValueOfType(type, buffer);
+      }
+    }
+
+    @Override
+    protected void writeValue(@NonNull ByteArrayOutputStream stream, Object value) {
+      if (value instanceof MessageDto) {
+        stream.write(128);
+        writeValue(stream, ((MessageDto) value).toList());
+      } else if (value instanceof MessageDto) {
+        stream.write(129);
+        writeValue(stream, ((MessageDto) value).toList());
+      } else {
+        super.writeValue(stream, value);
+      }
+    }
+  }
+
+  /** Generated class from Pigeon that represents Flutter messages that can be called from Java. */
+  public static class FlutterMessagingApi {
+    private final @NonNull BinaryMessenger binaryMessenger;
+    private final String messageChannelSuffix;
+
+    public FlutterMessagingApi(@NonNull BinaryMessenger argBinaryMessenger) {
+      this(argBinaryMessenger, "");
+    }
+    public FlutterMessagingApi(@NonNull BinaryMessenger argBinaryMessenger, @NonNull String messageChannelSuffix) {
+      this.binaryMessenger = argBinaryMessenger;
+      this.messageChannelSuffix = messageChannelSuffix.isEmpty() ? "" : "." + messageChannelSuffix;
+    }
+
+    /** Public interface for sending reply. */ 
+    /** The codec used by FlutterMessagingApi. */
+    static @NonNull MessageCodec<Object> getCodec() {
+      return FlutterMessagingApiCodec.INSTANCE;
+    }
+    public void getMessages(@NonNull Result<List<MessageDto>> result) {
+      final String channelName = "dev.flutter.pigeon.messages.FlutterMessagingApi.getMessages" + messageChannelSuffix;
+      BasicMessageChannel<Object> channel =
+          new BasicMessageChannel<>(
+              binaryMessenger, channelName, getCodec());
+      channel.send(
+          null,
+          channelReply -> {
+            if (channelReply instanceof List) {
+              List<Object> listReply = (List<Object>) channelReply;
+              if (listReply.size() > 1) {
+                result.error(new FlutterError((String) listReply.get(0), (String) listReply.get(1), (String) listReply.get(2)));
+              } else if (listReply.get(0) == null) {
+                result.error(new FlutterError("null-error", "Flutter api returned null value for non-null return value.", ""));
+              } else {
+                @SuppressWarnings("ConstantConditions")
+                List<MessageDto> output = (List<MessageDto>) listReply.get(0);
+                result.success(output);
+              }
+            }  else {
+              result.error(createConnectionError(channelName));
+            } 
+          });
+    }
+    public void sendMessage(@NonNull MessageDto messageArg, @NonNull Result<MessageDto> result) {
+      final String channelName = "dev.flutter.pigeon.messages.FlutterMessagingApi.sendMessage" + messageChannelSuffix;
+      BasicMessageChannel<Object> channel =
+          new BasicMessageChannel<>(
+              binaryMessenger, channelName, getCodec());
+      channel.send(
+          new ArrayList<Object>(Collections.singletonList(messageArg)),
+          channelReply -> {
+            if (channelReply instanceof List) {
+              List<Object> listReply = (List<Object>) channelReply;
+              if (listReply.size() > 1) {
+                result.error(new FlutterError((String) listReply.get(0), (String) listReply.get(1), (String) listReply.get(2)));
+              } else if (listReply.get(0) == null) {
+                result.error(new FlutterError("null-error", "Flutter api returned null value for non-null return value.", ""));
+              } else {
+                @SuppressWarnings("ConstantConditions")
+                MessageDto output = (MessageDto) listReply.get(0);
+                result.success(output);
+              }
+            }  else {
+              result.error(createConnectionError(channelName));
+            } 
+          });
     }
   }
 }

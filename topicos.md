@@ -1,8 +1,4 @@
-## Pros
-
--
-
-## Contras
+## Observação
 
 - Não possui suporte para linux - (https://github.com/flutter/flutter/issues/73740)
 - [Type Mappings](https://docs.flutter.dev/platform-integration/platform-channels?tab=type-mappings-kotlin#codec)

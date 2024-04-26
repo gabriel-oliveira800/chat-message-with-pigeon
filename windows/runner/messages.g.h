@@ -48,6 +48,7 @@ template<class T> class ErrorOr {
 
  private:
   friend class MessagingApi;
+  friend class FlutterMessagingApi;
   ErrorOr() = default;
   T TakeValue() && { return std::get<T>(std::move(v_)); }
 
@@ -83,6 +84,8 @@ class MessageDto {
   flutter::EncodableList ToEncodableList() const;
   friend class MessagingApi;
   friend class MessagingApiCodecSerializer;
+  friend class FlutterMessagingApi;
+  friend class FlutterMessagingApiCodecSerializer;
   std::string id_;
   std::string name_;
   std::string message_;
@@ -137,4 +140,44 @@ class MessagingApi {
   MessagingApi() = default;
 
 };
+class FlutterMessagingApiCodecSerializer : public flutter::StandardCodecSerializer {
+ public:
+  FlutterMessagingApiCodecSerializer();
+  inline static FlutterMessagingApiCodecSerializer& GetInstance() {
+    static FlutterMessagingApiCodecSerializer sInstance;
+    return sInstance;
+  }
+
+  void WriteValue(
+    const flutter::EncodableValue& value,
+    flutter::ByteStreamWriter* stream) const override;
+
+ protected:
+  flutter::EncodableValue ReadValueOfType(
+    uint8_t type,
+    flutter::ByteStreamReader* stream) const override;
+
+};
+
+// Generated class from Pigeon that represents Flutter messages that can be called from C++.
+class FlutterMessagingApi {
+ public:
+  FlutterMessagingApi(flutter::BinaryMessenger* binary_messenger);
+  FlutterMessagingApi(
+    flutter::BinaryMessenger* binary_messenger,
+    const std::string& message_channel_suffix);
+  static const flutter::StandardMessageCodec& GetCodec();
+  void GetMessages(
+    std::function<void(const flutter::EncodableList&)>&& on_success,
+    std::function<void(const FlutterError&)>&& on_error);
+  void SendMessage(
+    const MessageDto& message,
+    std::function<void(const MessageDto&)>&& on_success,
+    std::function<void(const FlutterError&)>&& on_error);
+
+ private:
+  flutter::BinaryMessenger* binary_messenger_;
+  std::string message_channel_suffix_;
+};
+
 #endif  // PIGEON_MESSAGES_G_H_

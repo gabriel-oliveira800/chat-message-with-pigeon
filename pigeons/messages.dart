@@ -20,6 +20,15 @@ abstract class MessagingApi {
   MessageDto sendMessage(MessageDto message);
 }
 
+@FlutterApi()
+abstract class FlutterMessagingApi {
+  @async
+  List<MessageDto> getMessages();
+
+  @async
+  MessageDto sendMessage(MessageDto message);
+}
+
 class MessageDto {
   final String id;
   final String name;
